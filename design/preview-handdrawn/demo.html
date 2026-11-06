@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puppy hand-drawn test</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #efe2cc; overflow: hidden; }
+  svg { display: block; width: 100%; height: 100%; }
+  .hint { position: fixed; left: 0; right: 0; top: 18px; text-align: center; font: 600 15px/1.4 system-ui, sans-serif; color: #4a2519; opacity: .55; }
+</style>
+</head>
+<body>
+<div class="hint">Подвигайте мышкой — собачка следит за курсором</div>
+<svg id="s">
+<defs>
+  <!-- paper: fine grain + soft blotches, static -->
+  <filter id="paper" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="11" result="g"/>
+    <feColorMatrix in="g" type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.3  0 0 0 0 0.18  0 0 0 0.6 -0.22"/>
+  </filter>
+  <filter id="paperBlot" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.004" numOctaves="3" seed="5"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 0.85  0 0 0 0 0.68  0 0 0 0 0.48  0 0 0 1.4 -0.55"/>
+  </filter>
+  <!-- ink and paint: wobbly lines that "boil", gouache blotches and grain inside the fills -->
+  <filter id="drawn" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+    <feTurbulence id="boil" type="turbulence" baseFrequency="0.028" numOctaves="2" seed="1" result="wob"/>
+    <feDisplacementMap in="SourceGraphic" in2="wob" scale="4" xChannelSelector="R" yChannelSelector="G" result="ink"/>
+    <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" seed="8" result="blot"/>
+    <feColorMatrix in="blot" type="matrix" values="0 0 0 0 0.78  0 0 0 0 0.5  0 0 0 0 0.26  0 0 0 0.9 -0.4" result="blotTint"/>
+    <feComposite in="blotTint" in2="ink" operator="in" result="blotIn"/>
+    <feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed="4" result="grain"/>
+    <feColorMatrix in="grain" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.18  0 0 0 0.9 -0.43" result="grainTint"/>
+    <feComposite in="grainTint" in2="ink" operator="in" result="grainIn"/>
+    <feMerge><feMergeNode in="ink"/><feMergeNode in="blotIn"/><feMergeNode in="grainIn"/></feMerge>
+  </filter>
+</defs>
+<rect width="100%" height="100%" filter="url(#paperBlot)"/>
+<rect width="100%" height="100%" filter="url(#paper)"/>
+</svg>
+<script src="dog.js"></script>
+<script>
+(function () {
+  // Quick idle + look-at driver for the team-b rig (preview only, not the final engine).
+  var D = PuppyDog._dev, svg = document.getElementById('s');
+  var W = 0, H = 0, S = 1, CX = 0, GY = 0;
+  var shadow = D.el('ellipse', svg, { fill: '#4a2519', opacity: 0.13, filter: 'url(#drawn)' });
+  var ink = D.el('g', svg, { filter: 'url(#drawn)' });
+  var root = D.el('g', ink);
+  var boil = document.getElementById('boil'), boilK = 0, body = { wag: 0, breath: 0 };
+  var sc = new D.Scene(root), rig = new D.Rig(sc), P = D.defaultPose();
+  var tailEls = [sc.tailUl, sc.tailF, sc.tailTip.parentNode];
+
+  function layout() {
+    W = innerWidth; H = innerHeight;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    S = Math.min(H * 0.72 / 900, W * 0.8 / 900);
+    CX = W / 2; GY = H * 0.93;
+  }
+  layout(); addEventListener('resize', layout);
+
+  function Spring(k, zeta) { this.x = 0; this.v = 0; this.k = k; this.c = 2 * Math.sqrt(k) * zeta; }
+  Spring.prototype.step = function (target, dt) {
+    this.v += (this.k * (target - this.x) - this.c * this.v) * dt; this.x += this.v * dt; return this.x;
+  };
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+  var yawS = new Spring(55, 0.5), pitchS = new Spring(55, 0.55);          // head: slightly bouncy, overshoots
+  var lookXS = new Spring(900, 0.92), lookYS = new Spring(900, 0.92);      // eyes dart (saccades) ahead of the head
+  var tongueS = new Spring(70, 0.16), pupilS = new Spring(40, 0.8);
+  var sacX = 0, sacY = 0, nextSac = 0.6;
+  var swing = new Spring(95, 0.22), swingTip = new Spring(45, 0.3);        // ears lag behind head motion
+  var flareL = new Spring(160, 0.25), flareR = new Spring(160, 0.25);      // ear twitches
+  var mouse = { x: 0, y: 0, set: false };
+  addEventListener('pointermove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; mouse.set = true; });
+
+  // deterministic PRNG so recordings repeat
+  var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+  var t = 0, prevYaw = 0, nextBlink = 1.2, blinkT = -1, doubleBlink = false, nextTwitch = 2.5;
+
+  function update(dt) {
+    t += dt;
+    var hx = CX - 46 * S, hy = GY - 595 * S;
+    var dx = mouse.set ? (mouse.x - hx) / (W * 0.45) : 0, dy = mouse.set ? (mouse.y - hy) / (H * 0.45) : 0.15;
+    var yaw = yawS.step(clamp(dx, -1, 1) * 0.55, dt);
+    var pitch = pitchS.step(-clamp(dy, -1, 1) * 0.32, dt);
+    var yawVel = (yaw - prevYaw) / dt; prevYaw = yaw;
+    if (t > nextSac) {                                  // small idle micro-saccades
+      sacX = (rnd() - 0.5) * 0.22; sacY = (rnd() - 0.5) * 0.16;
+      nextSac = t + 0.45 + rnd() * 1.3;
+    }
+    lookXS.step(clamp(dx * 1.7 + sacX, -1, 1), dt); lookYS.step(clamp(dy * 1.7 + sacY, -1, 1), dt);
+    var near = Math.max(0, 1 - Math.hypot(dx, dy) * 2.2);  // pupils dilate a little when the cursor is close to the face
+    pupilS.step(1 + 0.16 * near, dt);
+    swing.step(clamp(yawVel * 0.16, -0.5, 0.5), dt); swingTip.step(swing.x, dt);
+
+    if (t > nextTwitch) {                               // occasional ear flick
+      (rnd() < 0.5 ? flareL : flareR).v += 3.2;
+      nextTwitch = t + 2.5 + rnd() * 4;
+    }
+    flareL.step(0, dt); flareR.step(0, dt);
+
+    if (blinkT < 0 && t > nextBlink) { blinkT = 0; }
+    var eyeOpen = 1;
+    if (blinkT >= 0) {
+      blinkT += dt;
+      var u = blinkT / 0.17;
+      eyeOpen = u < 0.4 ? 1 - u / 0.4 : Math.min(1, (u - 0.4) / 0.6);  // fast close, slower open
+      eyeOpen = Math.max(0.06, eyeOpen * eyeOpen * (3 - 2 * eyeOpen));
+      if (u >= 1) {
+        blinkT = -1;
+        if (!doubleBlink && rnd() < 0.3) { doubleBlink = true; nextBlink = t + 0.12; }
+        else { doubleBlink = false; nextBlink = t + 2 + rnd() * 3.5; }
+      }
+    }
+
+    var breath = Math.sin(t * Math.PI * 2 * 0.42);
+    var pant = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 1.7);
+    P.hyaw = yaw; P.hpitch = pitch;
+    P.hroll = -yaw * 0.1 + Math.sin(t * 0.7) * 0.03;
+    P.hx = yaw * 26; P.hy = -pitch * 20 - breath * 7;
+    P.lookX = lookXS.x; P.lookY = lookYS.x;
+    P.eyeOpen = eyeOpen;
+    P.mouthOpen = 0.62 + 0.22 * pant; P.tongue = 0.72 + 0.26 * (0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 1.7 - 0.8));
+    // tongue tip: lags head turns, swings with panting, hangs toward gravity when the head rolls
+    P.tongueSway = tongueS.step(clamp(-yawVel * 16, -28, 28) - P.hroll * 110 + Math.sin(t * Math.PI * 2 * 1.7) * 2.5, dt);
+    P.pupil = pupilS.x;
+    var sway = Math.sin(t * 1.9) * 0.035;
+    P.earL = swing.x + sway + flareL.x * 0.25 + breath * 0.02;
+    P.earR = -swing.x - sway + flareR.x * 0.25 + breath * 0.02;
+    P.earLb = (swing.x - swingTip.x) * 1.4; P.earRb = -(swing.x - swingTip.x) * 1.4;
+
+    body.wag = Math.sin(t * Math.PI * 2 * 2.3) * 16 + Math.sin(t * Math.PI * 2 * 4.6) * 3;
+    body.breath = breath;
+  }
+
+  var held = 0, TWOS = 1 / 12;
+  function applyBody() {  // body, tail and shadow are drawn on twos together with the face
+    for (var i = 0; i < tailEls.length; i++) tailEls[i].setAttribute('transform', 'rotate(' + body.wag.toFixed(2) + ' 312 -112)');
+    root.setAttribute('transform', 'translate(' + CX + ',' + GY + ') scale(' + (S * (1 - 0.004 * body.breath)) + ',' + (S * (1 + 0.013 * body.breath)) + ')');
+    shadow.setAttribute('cx', CX + 40 * S); shadow.setAttribute('cy', GY + 6 * S);
+    shadow.setAttribute('rx', 330 * S); shadow.setAttribute('ry', 34 * S);
+  }
+  function render(force) {
+    if (!force && held < TWOS) return;
+    P.dt = held || P.dt; held = 0;
+    boilK = (boilK + 1) % 3; boil.setAttribute('seed', String(boilK * 7 + 1));
+    applyBody(); rig.render(P);
+  }
+
+  var paused = /[?&]paused/.test(location.search), last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!paused) { var n = Math.ceil(dt / (1 / 120)); for (var i = 0; i < n; i++) update(dt / n); held += dt; render(); }
+    requestAnimationFrame(frame);
+  }
+  update(0); P.dt = 0; render(true); requestAnimationFrame(frame);
+  window.__demo = { step: function (ms) { var n = Math.ceil(ms / (1000 / 120)); for (var i = 0; i < n; i++) update(ms / 1000 / n); held += ms / 1000; render(); } };
+})();
+</script>
+</body>
+</html>

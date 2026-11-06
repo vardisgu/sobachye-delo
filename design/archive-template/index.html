@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- НАЗВАНИЕ САЙТА: заглушка «Бублик». Встречается в <title>, в мета-тегах ниже,
+       в блоке «НАЗВАНИЕ» внутри #stage, в шапке, в меню и в подвале.
+       Поиск по слову «Бублик» найдёт все места. -->
+  <title>Бублик · груминг-студия</title>
+  <meta name="description" content="Груминг-студия: стрижка, мытьё, когти и уход за шерстью. Цены, мастера, адрес и онлайн-запись. Перезвоним и подберём время.">
+  <meta name="theme-color" content="#c4d9eb">
+  <meta name="format-detection" content="telephone=no">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:title" content="Бублик · груминг-студия">
+  <meta property="og:description" content="Груминг, после которого хочется обниматься. Цены, мастера и онлайн-запись.">
+  <!-- ЗАГЛУШКА: картинка для превью в мессенджерах. Положите файл 1200×630 рядом с сайтом
+       и раскомментируйте строку, указав полный адрес сайта:
+  <meta property="og:image" content="https://ваш-сайт.ru/og.png"> -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='29' fill='%23e5ad75' stroke='%234a2519' stroke-width='5'/%3E%3Cg fill='%234a2519'%3E%3Cpath d='M32 30.5c-6.6 0-12 6-12 11 0 3.7 2.9 5.6 6 5.6 2.4 0 3.9-1.2 6-1.2s3.6 1.2 6 1.2c3.1 0 6-1.9 6-5.6 0-5-5.4-11-12-11z'/%3E%3Cellipse cx='21.5' cy='27' rx='3.6' ry='4.7' transform='rotate(-22 21.5 27)'/%3E%3Cellipse cx='28' cy='20.5' rx='3.8' ry='5'/%3E%3Cellipse cx='36' cy='20.5' rx='3.8' ry='5'/%3E%3Cellipse cx='42.5' cy='27' rx='3.6' ry='4.7' transform='rotate(22 42.5 27)'/%3E%3C/g%3E%3C/svg%3E">
+
+  <!-- Шрифты: Unbounded (название, заголовки, цены) + Golos Text (текст).
+       Оба с кириллицей. Без сети страница остаётся аккуратной на системных шрифтах. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Собачка: риг тела, риг головы, движок поведений (порядок важен) -->
+  <script src="js/dog/body.js" defer></script>
+  <script src="js/dog/head.js" defer></script>
+  <script src="js/dog/engine.js" defer></script>
+  <script src="js/bubbles.js" defer></script>
+  <!-- app.js — форма и собачка; site.js — навигация, цены, меню и прочее (после app.js) -->
+  <script src="js/app.js" defer></script>
+  <script src="js/site.js" defer></script>
+</head>
+<body>
+  <!-- Иконки: Phosphor Icons (MIT, phosphoricons.com), стиль Regular. Знак-лапка — фирменный знак сайта. -->
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-mark" viewBox="0 0 64 64">
+      <circle cx="32" cy="32" r="28.5" fill="#e5ad75" stroke="#4a2519" stroke-width="4"/>
+      <g fill="#4a2519">
+        <path d="M32 30.5c-6.6 0-12 6-12 11 0 3.7 2.9 5.6 6 5.6 2.4 0 3.9-1.2 6-1.2s3.6 1.2 6 1.2c3.1 0 6-1.9 6-5.6 0-5-5.4-11-12-11z"/>
+        <ellipse cx="21.5" cy="27" rx="3.6" ry="4.7" transform="rotate(-22 21.5 27)"/>
+        <ellipse cx="28" cy="20.5" rx="3.8" ry="5"/>
+        <ellipse cx="36" cy="20.5" rx="3.8" ry="5"/>
+        <ellipse cx="42.5" cy="27" rx="3.6" ry="4.7" transform="rotate(22 42.5 27)"/>
+      </g>
+    </symbol>
+    <symbol id="i-arrow" viewBox="0 0 256 256"><path fill="currentColor" d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+    <symbol id="i-arrow-ur" viewBox="0 0 256 256"><path fill="currentColor" d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 256 256"><path fill="currentColor" d="M222.37,158.46l-47.11-21.11-.13-.06a16,16,0,0,0-15.17,1.4,8.12,8.12,0,0,0-.75.56L134.87,160c-15.42-7.49-31.34-23.29-38.83-38.51l20.78-24.71c.2-.25.39-.5.57-.77a16,16,0,0,0,1.32-15.06l0-.12L97.54,33.64a16,16,0,0,0-16.62-9.52A56.26,56.26,0,0,0,32,80c0,79.4,64.6,144,144,144a56.26,56.26,0,0,0,55.88-48.92A16,16,0,0,0,222.37,158.46ZM176,208A128.14,128.14,0,0,1,48,80,40.2,40.2,0,0,1,82.87,40a.61.61,0,0,0,0,.12l21,47L83.2,111.86a6.13,6.13,0,0,0-.57.77,16,16,0,0,0-1,15.7c9.06,18.53,27.73,37.06,46.46,46.11a16,16,0,0,0,15.75-1.14,8.44,8.44,0,0,0,.74-.56L168.89,152l47,21.05h0s.08,0,.11,0A40.21,40.21,0,0,1,176,208Z"/></symbol>
+    <symbol id="i-telegram" viewBox="0 0 256 256"><path fill="currentColor" d="M228.88,26.19a9,9,0,0,0-9.16-1.57L17.06,103.93a14.22,14.22,0,0,0,2.43,27.21L72,141.45V200a15.92,15.92,0,0,0,10,14.83,15.91,15.91,0,0,0,17.51-3.73l25.32-26.26L165,220a15.88,15.88,0,0,0,10.51,4,16.3,16.3,0,0,0,5-.79,15.85,15.85,0,0,0,10.67-11.63L231.77,35A9,9,0,0,0,228.88,26.19Zm-61.14,36L78.15,126.35l-49.6-9.73ZM88,200V152.52l24.79,21.74Zm87.53,8L92.85,135.5l119-85.29Z"/></symbol>
+    <symbol id="i-whatsapp" viewBox="0 0 256 256"><path fill="currentColor" d="M187.58,144.84l-32-16a8,8,0,0,0-8,.5l-14.69,9.8a40.55,40.55,0,0,1-16-16l9.8-14.69a8,8,0,0,0,.5-8l-16-32A8,8,0,0,0,104,64a40,40,0,0,0-40,40,88.1,88.1,0,0,0,88,88,40,40,0,0,0,40-40A8,8,0,0,0,187.58,144.84ZM152,176a72.08,72.08,0,0,1-72-72A24,24,0,0,1,99.29,80.46l11.48,23L101,118a8,8,0,0,0-.73,7.51,56.47,56.47,0,0,0,30.15,30.15A8,8,0,0,0,138,155l14.61-9.74,23,11.48A24,24,0,0,1,152,176ZM128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm0,192a87.87,87.87,0,0,1-44.06-11.81,8,8,0,0,0-6.54-.67L40,216,52.47,178.6a8,8,0,0,0-.66-6.54A88,88,0,1,1,128,216Z"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 256 256"><path fill="currentColor" d="M128,64a40,40,0,1,0,40,40A40,40,0,0,0,128,64Zm0,64a24,24,0,1,1,24-24A24,24,0,0,1,128,128Zm0-112a88.1,88.1,0,0,0-88,88c0,31.4,14.51,64.68,42,96.25a254.19,254.19,0,0,0,41.45,38.3,8,8,0,0,0,9.18,0A254.19,254.19,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25A88.1,88.1,0,0,0,128,16Zm0,206c-16.53-13-72-60.75-72-118a72,72,0,0,1,144,0C200,161.23,144.53,209,128,222Z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 256 256"><path fill="currentColor" d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 256 256"><path fill="currentColor" d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></symbol>
+    <symbol id="i-close" viewBox="0 0 256 256"><path fill="currentColor" d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 256 256"><path fill="currentColor" d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#main">Перейти к записи и содержимому</a>
+
+  <!-- =================================================================
+       ШАПКА. На компьютере лежит поверх сцены с собачкой и всегда видна
+       (сцена «прилипает» к экрану). На телефоне — тонкая полоска сверху.
+       ================================================================= -->
+  <header class="topbar" id="topbar">
+    <a class="topbar__home" href="#top" aria-label="Бублик, в начало страницы">
+      <svg class="topbar__mark" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg>
+      <span class="topbar__name" aria-hidden="true">Бублик</span>
+    </a>
+
+    <nav class="topbar__nav" aria-label="Разделы сайта">
+      <ul class="topbar__links">
+        <li><a class="topbar__link" href="#services">Услуги</a></li>
+        <li><a class="topbar__link" href="#masters">Мастера</a></li>
+        <li><a class="topbar__link" href="#reviews">Отзывы</a></li>
+        <li><a class="topbar__link" href="#faq">Вопросы</a></li>
+        <li><a class="topbar__link" href="#contacts">Контакты</a></li>
+      </ul>
+    </nav>
+
+    <a class="topbar__cta" href="#contact" data-go-form>Записаться</a>
+
+    <button class="topbar__menu" type="button" popovertarget="menu" aria-controls="menu">
+      <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg>
+      <span>Меню</span>
+    </button>
+  </header>
+
+  <!-- Меню для телефонов и узких экранов (открывается кнопкой «Меню») -->
+  <div class="menu" id="menu" popover aria-label="Меню">
+    <div class="menu__head">
+      <p class="menu__title">Бублик</p>
+      <button class="menu__close" type="button" popovertarget="menu" popovertargetaction="hide" aria-label="Закрыть меню">
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <nav aria-label="Разделы сайта, меню">
+      <ul class="menu__links">
+        <li><a class="menu__link" href="#services">Услуги и цены</a></li>
+        <li><a class="menu__link" href="#visit">Как проходит визит</a></li>
+        <li><a class="menu__link" href="#masters">Мастера</a></li>
+        <li><a class="menu__link" href="#reviews">Отзывы</a></li>
+        <li><a class="menu__link" href="#faq">Вопросы</a></li>
+        <li><a class="menu__link" href="#contacts">Контакты</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--primary menu__cta" href="#contact" data-go-form>Записаться</a>
+    <!-- ЗАГЛУШКА: телефон студии (ещё в форме, в «Контактах» и в подвале) -->
+    <a class="menu__phone" href="tel:+79000000000">
+      <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>
+      +7 (900) 000-00-00
+    </a>
+  </div>
+
+  <div class="page" id="top">
+
+    <!-- ЛЕВАЯ ПОЛОВИНА: мир собачки. Название — на 1/4 высоты, собачка — внизу.
+         На компьютере сцена «прилипает» к экрану и сопровождает посетителя. -->
+    <section id="stage" class="stage" aria-labelledby="site-title">
+
+      <!-- =============================================================
+           НАЗВАНИЕ (заглушка) — поменяйте слово и подзаголовок здесь
+           ============================================================= -->
+      <div class="brand">
+        <h1 id="site-title" class="brand__name">Бублик</h1>
+        <p class="brand__tagline">Груминг, после которого хочется обниматься</p>
+      </div>
+      <!-- ============================================================= -->
+
+      <canvas id="dog" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- ПРАВАЯ ПОЛОВИНА: запись и всё о студии -->
+    <main class="content" id="main" tabindex="-1">
+
+      <!-- ===================== ЗАПИСЬ (первый экран) ===================== -->
+      <section class="contact" id="contact" aria-labelledby="form-title">
+        <div class="card" id="formZone">
+
+          <div class="card__view" id="formView">
+            <header class="card__head">
+              <h2 class="card__title" id="form-title" tabindex="-1">Запись на&nbsp;груминг</h2>
+              <p class="card__lead">Оставьте контакт: перезвоним, подберём время и&nbsp;мастера. Без спама, честное собачье.</p>
+            </header>
+
+            <form class="form" id="leadForm" method="post" novalidate aria-labelledby="form-title">
+
+              <div class="form__row">
+                <div class="field" data-field="name">
+                  <label class="field__label" for="f-name">Ваше имя</label>
+                  <input class="field__control" id="f-name" name="name" type="text"
+                         autocomplete="name" autocapitalize="words" maxlength="80" required
+                         placeholder="Как к вам обращаться?" aria-describedby="f-name-error">
+                  <div class="field__error" id="f-name-error"><p></p></div>
+                </div>
+
+                <div class="field" data-field="pet">
+                  <label class="field__label" for="f-pet">Кличка питомца <span class="field__optional">необязательно</span></label>
+                  <input class="field__control" id="f-pet" name="pet" type="text"
+                         autocapitalize="words" maxlength="60" placeholder="Например, Бублик">
+                </div>
+              </div>
+
+              <div class="field" data-field="contact">
+                <label class="field__label" for="f-contact">Телефон или e-mail</label>
+                <input class="field__control" id="f-contact" name="contact" type="text"
+                       maxlength="120" required spellcheck="false" autocapitalize="off" autocorrect="off"
+                       placeholder="+7 900 123-45-67 или e-mail" aria-describedby="f-contact-error">
+                <div class="field__error" id="f-contact-error"><p></p></div>
+              </div>
+
+              <fieldset class="field chips">
+                <legend class="field__label">Размер собаки <span class="field__optional">необязательно</span></legend>
+                <div class="chips__row chips__row--wrap">
+                  <label class="chip chip--radio">
+                    <input class="chip__input" type="radio" name="size" value="mini">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Мини</span>
+                  </label>
+                  <label class="chip chip--radio">
+                    <input class="chip__input" type="radio" name="size" value="medium">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Средняя</span>
+                  </label>
+                  <label class="chip chip--radio">
+                    <input class="chip__input" type="radio" name="size" value="large">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Крупная</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <fieldset class="field chips">
+                <legend class="field__label">Услуги <span class="field__optional">можно несколько</span></legend>
+                <!-- data-scene: какую сценку показывает собачка при выборе услуги -->
+                <div class="chips__row chips__row--wrap">
+                  <label class="chip">
+                    <input class="chip__input" type="checkbox" name="service" value="complex" data-scene="service-bath">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Комплекс</span>
+                  </label>
+                  <label class="chip">
+                    <input class="chip__input" type="checkbox" name="service" value="haircut" data-scene="service-haircut">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Стрижка</span>
+                  </label>
+                  <label class="chip">
+                    <input class="chip__input" type="checkbox" name="service" value="bath" data-scene="service-bath">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Мытьё</span>
+                  </label>
+                  <label class="chip">
+                    <input class="chip__input" type="checkbox" name="service" value="nails">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Когти</span>
+                  </label>
+                  <label class="chip">
+                    <input class="chip__input" type="checkbox" name="service" value="deshedding">
+                    <span class="chip__face"><span class="chip__mark" aria-hidden="true"></span>Экспресс-линька</span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <div class="field" data-field="message">
+                <label class="field__label" for="f-message">Пожелания <span class="field__optional">необязательно</span></label>
+                <input class="field__control" id="f-message" name="message" type="text" maxlength="300"
+                       placeholder="Порода, особенности, удобное время">
+              </div>
+
+              <div class="field consent" data-field="consent">
+                <div class="consent__row">
+                  <input class="consent__box" id="f-consent" name="consent" type="checkbox" value="yes"
+                         required aria-describedby="f-consent-error">
+                  <div class="consent__text">
+                    <label for="f-consent">Согласен(на) на&nbsp;обработку персональных данных</label>
+                    <!-- ЗАГЛУШКА: замените #privacy на адрес вашей политики (она же в подвале) -->
+                    <a class="consent__link" href="#privacy">Политика конфиденциальности</a>
+                  </div>
+                </div>
+                <div class="field__error" id="f-consent-error"><p></p></div>
+              </div>
+
+              <!-- Ловушка для ботов: людям не видна, заполнять не нужно -->
+              <div class="hp" aria-hidden="true">
+                <label for="f-website">Сайт</label>
+                <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off">
+              </div>
+
+              <div class="form__alert" id="formAlert" hidden>
+                <p class="form__alert-text" id="formAlertText">Заявка не отправилась.</p>
+                <button class="btn btn--quiet" type="button" id="retryBtn">Повторить</button>
+              </div>
+
+              <button class="btn btn--primary" type="submit" id="submitBtn">
+                <span class="btn__spinner" aria-hidden="true"></span>
+                <span class="btn__label">Записаться на груминг</span>
+              </button>
+
+              <noscript><p class="form__noscript">Чтобы отправить заявку, включите JavaScript в браузере. Или позвоните нам.</p></noscript>
+            </form>
+
+            <!-- ЗАГЛУШКА: телефон студии -->
+            <p class="card__alt">Удобнее голосом? <a href="tel:+79000000000">+7&nbsp;(900)&nbsp;000-00-00</a></p>
+          </div>
+
+          <div class="card__view success" id="successView" hidden>
+            <div class="success__badge" aria-hidden="true">
+              <svg viewBox="0 0 64 64" width="64" height="64" focusable="false">
+                <circle cx="32" cy="32" r="28.5" fill="currentColor" stroke="#4a2519" stroke-width="4"/>
+                <g fill="#4a2519">
+                  <path d="M32 30.5c-6.6 0-12 6-12 11 0 3.7 2.9 5.6 6 5.6 2.4 0 3.9-1.2 6-1.2s3.6 1.2 6 1.2c3.1 0 6-1.9 6-5.6 0-5-5.4-11-12-11z"/>
+                  <ellipse cx="21.5" cy="27" rx="3.6" ry="4.7" transform="rotate(-22 21.5 27)"/>
+                  <ellipse cx="28" cy="20.5" rx="3.8" ry="5"/>
+                  <ellipse cx="36" cy="20.5" rx="3.8" ry="5"/>
+                  <ellipse cx="42.5" cy="27" rx="3.6" ry="4.7" transform="rotate(22 42.5 27)"/>
+                </g>
+              </svg>
+            </div>
+            <h2 class="card__title success__title" id="successTitle" tabindex="-1">Спасибо<span id="successName"></span>!</h2>
+            <p class="card__lead success__text">Заявка у&nbsp;нас. Перезвоним в&nbsp;течение рабочего дня и&nbsp;подберём удобное время.</p>
+            <p class="success__note" id="successNote" hidden>А&nbsp;пёс уже примерил бандану: он тоже ждёт вас в&nbsp;гости.</p>
+            <button class="btn btn--quiet" type="button" id="againBtn">Отправить ещё</button>
+          </div>
+
+          <p class="sr-only" id="formStatus" role="status" aria-live="polite" aria-atomic="true"></p>
+        </div>
+      </section>
+
+      <!-- ===================== УСЛУГИ И ЦЕНЫ ===================== -->
+      <!-- ЗАГЛУШКА: все цены, длительности и описания услуг ниже — примерные.
+           Цена задаётся тремя числами: для мини, средней и крупной собаки
+           (элементы .p--mini, .p--medium, .p--large). Если услуг станет больше,
+           скопируйте целиком любую карточку <a class="svc">.
+           Плашка «Чаще всего выбирают» — тоже пример: оставьте её на услуге,
+           которую у вас действительно выбирают чаще всего, или удалите. -->
+      <section class="section services" id="services" aria-labelledby="services-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="services-title">Услуги и&nbsp;цены</h2>
+          <p class="section__lead">Цена зависит от&nbsp;размера собаки и&nbsp;состояния шерсти. Точную сумму мастер назовёт до&nbsp;начала работы.</p>
+
+          <fieldset class="sizes">
+            <legend class="sizes__legend">Показать цены для собаки</legend>
+            <div class="sizes__track">
+              <span class="sizes__thumb" aria-hidden="true"></span>
+              <label class="sizes__opt">
+                <input class="sizes__input" type="radio" name="price-size" value="mini" checked>
+                <span class="sizes__face"><span class="sizes__name">Мини</span><span class="sizes__kg">до&nbsp;10&nbsp;кг</span></span>
+              </label>
+              <label class="sizes__opt">
+                <input class="sizes__input" type="radio" name="price-size" value="medium">
+                <span class="sizes__face"><span class="sizes__name">Средняя</span><span class="sizes__kg">до&nbsp;25&nbsp;кг</span></span>
+              </label>
+              <label class="sizes__opt">
+                <input class="sizes__input" type="radio" name="price-size" value="large">
+                <span class="sizes__face"><span class="sizes__name">Крупная</span><span class="sizes__kg">от&nbsp;25&nbsp;кг</span></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <!-- data-service совпадает со значением чипса в форме; data-scene — сценка собачки -->
+          <div class="svc-grid">
+            <a class="svc svc--featured" href="#contact" data-service="complex" data-scene="service-bath" data-reveal>
+              <span class="svc__flag">Чаще всего выбирают</span>
+              <span class="svc__name">Комплекс</span>
+              <span class="svc__desc">Мытьё, стрижка, когти, чистка ушей и&nbsp;глаз. Всё за&nbsp;один визит.</span>
+              <span class="svc__foot">
+                <span class="svc__time"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>от&nbsp;2 до&nbsp;3&nbsp;часов</span>
+                <span class="svc__price"><span class="svc__from">от</span> <span class="p p--mini">3&nbsp;200</span><span class="p p--medium">4&nbsp;300</span><span class="p p--large">5&nbsp;900</span>&nbsp;₽</span>
+              </span>
+              <span class="svc__go"><span class="svc__go-label">Записаться</span><span class="svc__go-icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-arrow"/></svg></span></span>
+            </a>
+
+            <a class="svc" href="#contact" data-service="haircut" data-scene="service-haircut" data-reveal>
+              <span class="svc__name">Стрижка</span>
+              <span class="svc__desc">Модельная или гигиеническая, ножницами и&nbsp;машинкой.</span>
+              <span class="svc__foot">
+                <span class="svc__time"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>около 1,5&nbsp;часа</span>
+                <span class="svc__price"><span class="svc__from">от</span> <span class="p p--mini">2&nbsp;400</span><span class="p p--medium">3&nbsp;200</span><span class="p p--large">4&nbsp;500</span>&nbsp;₽</span>
+              </span>
+              <span class="svc__go" aria-hidden="true"><span class="svc__go-icon"><svg class="icon" focusable="false"><use href="#i-arrow"/></svg></span></span>
+            </a>
+
+            <a class="svc" href="#contact" data-service="bath" data-scene="service-bath" data-reveal>
+              <span class="svc__name">Мытьё</span>
+              <span class="svc__desc">Шампунь по&nbsp;типу шерсти, кондиционер, сушка и&nbsp;вычёсывание.</span>
+              <span class="svc__foot">
+                <span class="svc__time"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>около часа</span>
+                <span class="svc__price"><span class="svc__from">от</span> <span class="p p--mini">1&nbsp;800</span><span class="p p--medium">2&nbsp;400</span><span class="p p--large">3&nbsp;300</span>&nbsp;₽</span>
+              </span>
+              <span class="svc__go" aria-hidden="true"><span class="svc__go-icon"><svg class="icon" focusable="false"><use href="#i-arrow"/></svg></span></span>
+            </a>
+
+            <a class="svc" href="#contact" data-service="deshedding" data-reveal>
+              <span class="svc__name">Экспресс-линька</span>
+              <span class="svc__desc">Вычёсываем подшёрсток, чтобы шерсть не&nbsp;летала по&nbsp;квартире.</span>
+              <span class="svc__foot">
+                <span class="svc__time"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>около 1,5&nbsp;часа</span>
+                <span class="svc__price"><span class="svc__from">от</span> <span class="p p--mini">2&nbsp;100</span><span class="p p--medium">2&nbsp;900</span><span class="p p--large">3&nbsp;900</span>&nbsp;₽</span>
+              </span>
+              <span class="svc__go" aria-hidden="true"><span class="svc__go-icon"><svg class="icon" focusable="false"><use href="#i-arrow"/></svg></span></span>
+            </a>
+
+            <a class="svc" href="#contact" data-service="nails" data-reveal>
+              <span class="svc__name">Когти</span>
+              <span class="svc__desc">Стрижка и&nbsp;подпил когтей, осмотр подушечек лап.</span>
+              <span class="svc__foot">
+                <span class="svc__time"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-clock"/></svg>15&nbsp;минут</span>
+                <span class="svc__price"><span class="svc__from">от</span> <span class="p p--mini">600</span><span class="p p--medium">700</span><span class="p p--large">900</span>&nbsp;₽</span>
+              </span>
+              <span class="svc__go" aria-hidden="true"><span class="svc__go-icon"><svg class="icon" focusable="false"><use href="#i-arrow"/></svg></span></span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== КАК ПРОХОДИТ ВИЗИТ ===================== -->
+      <!-- ЗАГЛУШКА: проверьте, что шаги совпадают с тем, как работает ваша студия -->
+      <section class="section visit" id="visit" aria-labelledby="visit-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="visit-title">Как проходит визит</h2>
+          <ol class="steps">
+            <li class="step" data-reveal>
+              <span class="step__num" aria-hidden="true">1</span>
+              <div class="step__body">
+                <h3 class="step__title">Заявка</h3>
+                <p class="step__text">Оставляете контакт на&nbsp;сайте или звоните. Перезваниваем в&nbsp;течение рабочего дня, подбираем время и&nbsp;мастера.</p>
+              </div>
+            </li>
+            <li class="step" data-reveal>
+              <span class="step__num" aria-hidden="true">2</span>
+              <div class="step__body">
+                <h3 class="step__title">Знакомство</h3>
+                <p class="step__text">Мастер встречает вас и&nbsp;собаку, даёт ей&nbsp;всё обнюхать и&nbsp;обсуждает с&nbsp;вами стрижку. Без спешки.</p>
+              </div>
+            </li>
+            <li class="step" data-reveal>
+              <span class="step__num" aria-hidden="true">3</span>
+              <div class="step__body">
+                <h3 class="step__title">Груминг</h3>
+                <p class="step__text">От&nbsp;полутора до&nbsp;трёх часов. Можно подождать в&nbsp;студии или уйти по&nbsp;делам: пришлём фото, как всё идёт.</p>
+              </div>
+            </li>
+            <li class="step" data-reveal>
+              <span class="step__num" aria-hidden="true">4</span>
+              <div class="step__body">
+                <h3 class="step__title">Встреча</h3>
+                <p class="step__text">Показываем результат, рассказываем, как ухаживать за&nbsp;шерстью дома, и&nbsp;предлагаем дату следующего визита.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ===================== МАСТЕРА ===================== -->
+      <!-- ЗАГЛУШКА: имена, стаж и описания мастеров вымышлены.
+           Фото: замените <div class="master__photo ...">…</div> на
+           <img class="master__photo" src="img/anna.jpg" alt="Анна, старший грумер" width="480" height="600" loading="lazy">
+           Подойдут вертикальные фото 4:5. -->
+      <section class="section masters" id="masters" aria-labelledby="masters-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="masters-title">Мастера</h2>
+          <p class="section__lead">Каждый мастер сначала знакомится с&nbsp;собакой и&nbsp;только потом берёт ножницы.</p>
+          <ul class="masters__list" role="list">
+            <li class="master" data-reveal>
+              <div class="master__photo master__photo--caramel" aria-hidden="true"><span>А</span></div>
+              <h3 class="master__name">Анна</h3>
+              <p class="master__role">Старший грумер, 9&nbsp;лет</p>
+              <p class="master__note">Пудели, бишоны, шпицы. Особенно терпелива со&nbsp;щенками и&nbsp;пожилыми собаками.</p>
+            </li>
+            <li class="master" data-reveal>
+              <div class="master__photo master__photo--sky" aria-hidden="true"><span>К</span></div>
+              <h3 class="master__name">Ксения</h3>
+              <p class="master__role">Грумер-стилист, 6&nbsp;лет</p>
+              <p class="master__note">Азиатские и&nbsp;креативные стрижки, тонкая работа ножницами.</p>
+            </li>
+            <li class="master" data-reveal>
+              <div class="master__photo master__photo--cream" aria-hidden="true"><span>Т</span></div>
+              <h3 class="master__name">Тимур</h3>
+              <p class="master__role">Грумер, 7&nbsp;лет</p>
+              <p class="master__note">Крупные породы и&nbsp;тримминг: терьеры, шнауцеры, спаниели.</p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- ===================== ОТЗЫВЫ ===================== -->
+      <!-- ЗАГЛУШКА: это ВЫМЫШЛЕННЫЕ отзывы для макета. Перед запуском замените их
+           настоящими отзывами клиентов (с их согласия) или удалите блок целиком.
+           Публиковать придуманные отзывы как настоящие нельзя. -->
+      <section class="section reviews" id="reviews" aria-labelledby="reviews-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="reviews-title">Отзывы</h2>
+
+          <figure class="quote quote--lead" data-reveal>
+            <blockquote class="quote__text">
+              <p>Пряник раньше дрожал у&nbsp;любого грумера. Здесь он&nbsp;впервые спокойно лежал на&nbsp;столе.</p>
+            </blockquote>
+            <figcaption class="quote__who">Ольга, хозяйка корги Пряника</figcaption>
+          </figure>
+
+          <div class="quotes">
+            <figure class="quote" data-reveal>
+              <blockquote class="quote__text">
+                <p>Записались вечером, а&nbsp;утром уже стригли. Тофу вернулся пушистым облаком и&nbsp;очень довольным.</p>
+              </blockquote>
+              <figcaption class="quote__who">Марина, хозяйка шпица Тофу</figcaption>
+            </figure>
+            <figure class="quote" data-reveal>
+              <blockquote class="quote__text">
+                <p>Прислали фото прямо во&nbsp;время мытья. Спокойно, когда видишь, что с&nbsp;собакой всё хорошо.</p>
+              </blockquote>
+              <figcaption class="quote__who">Дмитрий, хозяин лабрадора Бони</figcaption>
+            </figure>
+          </div>
+
+          <!-- ЗАГЛУШКА: ссылка на карточку студии в Яндекс Картах или 2ГИС -->
+          <a class="link-arrow" href="https://yandex.ru/maps/" target="_blank" rel="noopener">
+            Ещё отзывы на&nbsp;Яндекс Картах
+            <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow-ur"/></svg>
+            <span class="sr-only">(откроется в новой вкладке)</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ===================== ВОПРОСЫ ===================== -->
+      <!-- ЗАГЛУШКА: проверьте ответы (прививки, оплата, отмена) под правила вашей студии -->
+      <section class="section faq" id="faq" aria-labelledby="faq-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="faq-title">Частые вопросы</h2>
+          <div class="faq__list">
+            <details class="qa">
+              <summary class="qa__q">Можно остаться рядом с&nbsp;собакой?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Да. Многие собаки спокойнее, когда хозяин рядом. Если питомец, наоборот, отвлекается на&nbsp;вас, мастер предложит подождать в&nbsp;зоне отдыха.</p></div>
+            </details>
+            <details class="qa">
+              <summary class="qa__q">Что, если собака боится или кусается?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Предупредите об&nbsp;этом при записи. Работаем без спешки и&nbsp;делаем паузы. Намордник надеваем, только если он&nbsp;нужен для безопасности. Успокоительные не&nbsp;используем.</p></div>
+            </details>
+            <details class="qa">
+              <summary class="qa__q">Как подготовить собаку к&nbsp;визиту?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Погуляйте перед визитом и&nbsp;не&nbsp;кормите плотно за&nbsp;два-три часа. Если шерсть сбилась в&nbsp;колтуны, скажите заранее: на&nbsp;это нужно больше времени.</p></div>
+            </details>
+            <details class="qa">
+              <summary class="qa__q">Нужны ли прививки?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Да: действующая прививка от&nbsp;бешенства и&nbsp;комплексная. На&nbsp;первый визит возьмите ветеринарный паспорт.</p></div>
+            </details>
+            <details class="qa">
+              <summary class="qa__q">С&nbsp;какого возраста можно на&nbsp;груминг?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Щенков ждём после всех прививок, обычно с&nbsp;трёх-четырёх месяцев. Первый визит короткий: знакомимся, моем лапы, стрижём когти.</p></div>
+            </details>
+            <details class="qa">
+              <summary class="qa__q">Как оплатить и&nbsp;перенести запись?<span class="qa__icon" aria-hidden="true"><svg class="icon" focusable="false"><use href="#i-plus"/></svg></span></summary>
+              <div class="qa__a"><p>Оплата после визита: картой, наличными или по&nbsp;СБП. Перенести или отменить запись можно бесплатно, если предупредить за&nbsp;сутки.</p></div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== КОНТАКТЫ ===================== -->
+      <!-- ЗАГЛУШКА: адрес, ориентир, часы, часовой пояс, телефон и мессенджеры ниже — примерные.
+           Часы работы заданы ещё и в data-open / data-close у .open-status:
+           по ним сайт пишет «Сейчас открыто» или «Сейчас закрыто». data-tz — часовой пояс студии. -->
+      <section class="section contacts" id="contacts" aria-labelledby="contacts-title">
+        <div class="section__inner">
+          <h2 class="section__title" id="contacts-title">Контакты</h2>
+
+          <div class="contacts__grid">
+            <address class="contacts__info">
+              <p class="contacts__street">ул.&nbsp;Липовая, 14</p>
+              <p class="contacts__hint">Вход со&nbsp;двора, синяя дверь с&nbsp;лапой</p>
+
+              <dl class="contacts__list">
+                <div class="contacts__row">
+                  <dt>Часы работы</dt>
+                  <dd>
+                    Ежедневно с&nbsp;10:00 до&nbsp;21:00
+                    <span class="open-status" data-open="10:00" data-close="21:00" data-tz="Europe/Moscow" hidden></span>
+                  </dd>
+                </div>
+                <div class="contacts__row">
+                  <dt>Телефон</dt>
+                  <dd><a class="contacts__phone" href="tel:+79000000000">+7&nbsp;(900)&nbsp;000-00-00</a></dd>
+                </div>
+                <div class="contacts__row">
+                  <dt>Мессенджеры</dt>
+                  <dd class="contacts__messengers">
+                    <!-- ЗАГЛУШКА: впишите свой ник в Telegram и номер для WhatsApp -->
+                    <a class="pill-link" href="https://t.me/" target="_blank" rel="noopener">
+                      <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-telegram"/></svg>Telegram<span class="sr-only"> (откроется в новой вкладке)</span>
+                    </a>
+                    <a class="pill-link" href="https://wa.me/79000000000" target="_blank" rel="noopener">
+                      <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-whatsapp"/></svg>WhatsApp<span class="sr-only"> (откроется в новой вкладке)</span>
+                    </a>
+                  </dd>
+                </div>
+              </dl>
+            </address>
+
+            <!-- ЗАГЛУШКА КАРТЫ. Чтобы показать настоящую карту, создайте её в
+                 конструкторе Яндекс Карт (yandex.ru/map-constructor), скопируйте код iframe
+                 и вставьте его вместо блока .map__art ниже. Ссылку «Открыть в Яндекс Картах»
+                 замените на ссылку на вашу точку. -->
+            <div class="map">
+              <div class="map__art" aria-hidden="true">
+                <span class="map__street map__street--a"></span>
+                <span class="map__street map__street--b"></span>
+                <span class="map__street map__street--c"></span>
+                <span class="map__park"></span>
+                <span class="map__pin"><svg focusable="false"><use href="#i-mark"/></svg></span>
+              </div>
+              <a class="map__open" href="https://yandex.ru/maps/" target="_blank" rel="noopener">
+                <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-pin"/></svg>
+                Открыть в&nbsp;Яндекс Картах<span class="sr-only"> (откроется в новой вкладке)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+      <!-- ===================== ПОДВАЛ =====================
+           Цвет подвала продолжает «пол» сцены, на котором сидит собачка.
+           Подвал живёт в правой колонке: сцена остаётся рядом до самого конца. -->
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <div class="site-footer__brand">
+            <svg class="site-footer__mark" aria-hidden="true" focusable="false"><use href="#i-mark"/></svg>
+            <div>
+              <p class="site-footer__name">Бублик</p>
+              <p class="site-footer__kind">Груминг-студия</p>
+            </div>
+          </div>
+
+          <!-- ЗАГЛУШКА: те же адрес, часы и телефон, что в «Контактах» -->
+          <div class="site-footer__contacts">
+            <a class="site-footer__phone" href="tel:+79000000000">+7&nbsp;(900)&nbsp;000-00-00</a>
+            <p>ул.&nbsp;Липовая, 14, вход со&nbsp;двора</p>
+            <p>Ежедневно с&nbsp;10:00 до&nbsp;21:00</p>
+          </div>
+
+          <div class="site-footer__legal">
+            <!-- ЗАГЛУШКА: впишите реквизиты (ИП или ООО, ИНН/ОГРН). Мы их не придумываем. -->
+            <p>©&nbsp;2026 Бублик</p>
+            <!-- ЗАГЛУШКА: адрес страницы с политикой конфиденциальности -->
+            <a href="#privacy">Политика конфиденциальности</a>
+          </div>
+        </div>
+      </footer>
+  </div>
+
+</body>
+</html>

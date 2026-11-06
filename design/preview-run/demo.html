@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puppy zoomies test</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: linear-gradient(#c6dbec, #a9c6e0 70%, #98b7d4); }
+  svg { display: block; width: 100%; height: 100%; }
+  .again { position: fixed; left: 16px; top: 14px; font: 600 14px/1 system-ui, sans-serif; color: #4a2519; background: #fff8; border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<button class="again" onclick="location.reload()">Ещё раз</button>
+<svg id="s"></svg>
+<script src="../../js/dog/body.js"></script>
+<script src="../../js/dog/head.js"></script>
+<script>
+(function () {
+  // Zoomies test ("носится после купания"): planted-foot half-bound gallop, skids, turns through the front view.
+  var D = PuppyDog._dev, svg = document.getElementById('s');
+  var shadow = D.el('ellipse', svg, { fill: '#27476a', opacity: 0.18 });
+  var fxG = D.el('g', svg);
+  var rootG = D.el('g', svg);
+  var sc = new D.Scene(rootG), rig = new D.Rig(sc), P = D.defaultPose();
+  var DEG = Math.PI / 180, SIT_UNITS = 870;
+  var W = innerWidth, H = innerHeight;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  var hpx = Math.min(Math.max(0.2 * H, 110), 230, 0.42 * W), S = hpx / SIT_UNITS, homeX = W / 2, groundY = 0.89 * H;
+  var VMAX = 3.2 * hpx, ACC = 9 * hpx, BRAKE = 12 * hpx;
+
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ease(s) { return s * s * (3 - 2 * s); }
+  function Spring(x, w, z) { this.x = x; this.v = 0; this.w = w; this.z = z; this.t = x; }
+  Spring.prototype.step = function (dt) { this.v += (this.w * this.w * (this.t - this.x) - 2 * this.z * this.w * this.v) * dt; this.x += this.v * dt; return this.x; };
+  var seed = 5; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+  var POSES = {
+    sit:   { cx: 0, cy: -350, cz: 40, phi: 72, fpx: 62, fpy: -32, fpz: 120, hpx: 200, hpy: -32, hpz: 70 },
+    stand: { cx: 0, cy: -330, cz: 70, phi: 8, fpx: 70, fpy: -32, fpz: 130, hpx: 125, hpy: -32, hpz: -100 },
+    brace: { cx: 0, cy: -295, cz: 20, phi: 16, fpx: 78, fpy: -32, fpz: 215, hpx: 120, hpy: -32, hpz: -30 }
+  };
+  var KEYS = Object.keys(POSES.sit), pose = {};
+  KEYS.forEach(function (k) { pose[k] = new Spring(POSES.sit[k], 12, 0.8); });
+  function target(name, w, z) { KEYS.forEach(function (k) { pose[k].t = POSES[name][k]; pose[k].w = w; pose[k].z = z; }); }
+
+  // gait: each leg plants its paw in the world while in stance; swings on an arc to the next landing spot
+  var NEUTRAL = { frontL: [-70, 125], frontR: [70, 125], hindL: [-125, -100], hindR: [125, -100] };
+  var legs = [['frontL', 0.0], ['frontR', 0.1], ['hindL', 0.5], ['hindR', 0.6]].map(function (l) {
+    return { name: l[0], off: l[1], stance: true, W: null, Wo: null, y: -32 };
+  });
+  var phase = 0;
+  var yaw = new Spring(0, 11, 0.85), runBlend = new Spring(0, 7, 1), headY = new Spring(0, 22, 0.42);
+  var flare = new Spring(0, 10, 0.25), swing = new Spring(0, 8, 0.5), tail = new Spring(0, 9, 0.4), lean = new Spring(0, 9, 0.7);
+  var t = 0, state = 'idle', stT = 0, rx = homeX, v = 0, dir = 1, laps = [0.8, 0.2, 0.5], lapI = 0, drops = [], dust = [];
+  var B = null, prevNeckY = null;
+
+  function rot(x, z, a) { var c = Math.cos(a), s = Math.sin(a); return [x * c + z * s, -x * s + z * c]; }
+  function unrot(x, z, a) { return rot(x, z, -a); }
+  function setState(s) { state = s; stT = 0; }
+
+  function update(dt) {
+    t += dt; stT += dt;
+    var sp = Math.abs(v) / VMAX;
+    // ---- behaviour script
+    if (state === 'idle' && stT > 0.9) { target('stand', 11, 0.7); setState('rise'); }
+    else if (state === 'rise' && stT > 0.28) { dir = laps[lapI] * W > rx ? 1 : -1; yaw.t = dir * 1.25; setState('turn'); }
+    else if (state === 'turn' && stT > 0.22) { runBlend.t = 1; runBlend.w = 7; target('stand', 11, 0.7); setState('run'); }
+    else if (state === 'run') {
+      var goal = laps[lapI] * W, dist = (goal - rx) * dir, stop = v * v / (2 * BRAKE);
+      if (dist <= stop + 2) { target('brace', 24, 0.7); runBlend.t = 0; runBlend.w = 16; setState('skid'); }
+      else v = Math.min(VMAX, Math.abs(v) + ACC * dt) * dir;
+    } else if (state === 'skid') {
+      var nv = Math.abs(v) - BRAKE * dt;
+      if (stT < 0.02) for (var i = 0; i < 5; i++) dust.push({ x: rx + dir * hpx * 0.2, y: groundY - 3, vx: dir * (60 + rnd() * 120), r: 5 + rnd() * 7, a: 0 });
+      if (nv <= 0) {
+        v = 0; lapI++;
+        if (lapI < laps.length) { dir = -dir; yaw.t = 0; target('stand', 14, 0.6); setState('flip'); }
+        else { runBlend.t = 0; yaw.t = 0; target('stand', 10, 0.7); setState('stop'); }
+      } else v = nv * dir;
+    } else if (state === 'flip' && stT > 0.12) { yaw.t = dir * 1.25; setState('turn'); }
+    else if (state === 'stop' && stT > 0.35) { target('sit', 9, 0.72); setState('pant'); }
+    rx += v * dt;
+    // ---- gait clock and planted feet (dog units, world = screen x / S)
+    var f = 1.7 + 2.1 * sp, duty = 0.44 - 0.1 * sp, vu = Math.abs(v) / S;
+    phase += f * dt;
+    yaw.step(dt); runBlend.step(dt);
+    var a = yaw.x, rootW = rx / S;
+    var L = vu * duty / f;                                        // ground covered while one paw is planted
+    legs.forEach(function (lg) {
+      var n = NEUTRAL[lg.name], nr = rot(n[0], n[1], a);
+      var p = (phase + lg.off) % 1, stance = p < duty;
+      var land = rootW + nr[0] + dir * (L / 2), landZ = nr[1];
+      if (!lg.W) { lg.W = [rootW + nr[0], nr[1]]; lg.Wo = lg.W.slice(); }
+      if (stance && !lg.stance) { lg.W = [lg.cur ? lg.cur[0] : land, lg.cur ? lg.cur[1] : landZ]; dustStep(lg); }
+      if (!stance && lg.stance) lg.Wo = lg.W.slice();
+      lg.stance = stance;
+      if (stance) { lg.cur = lg.W.slice(); lg.y = -32; }
+      else {
+        var s = (p - duty) / (1 - duty), rem = (1 - s) * (1 - duty) / f;
+        var landNow = land + dir * vu * rem;                       // where the body will be when this paw lands
+        lg.cur = [lerp(lg.Wo[0], landNow, ease(s)), lerp(lg.Wo[1], landZ, ease(s))];
+        lg.y = -32 - (50 + 45 * sp) * Math.sin(Math.PI * s);
+      }
+      var loc = unrot(lg.cur[0] - rootW, lg.cur[1], a);
+      lg.local = { x: loc[0], y: lg.y, z: loc[1] };
+    });
+    KEYS.forEach(function (k) { pose[k].step(dt); });
+    lean.t = state === 'skid' ? -1 : state === 'run' ? clamp(sp, 0, 1) * 0.6 : 0; lean.step(dt);
+    // ---- body: blend the static pose with the gait pose
+    var rb = clamp(runBlend.x, 0, 1);
+    var bob = 20 * sp * (0.5 - 0.5 * Math.cos(4 * Math.PI * phase));
+    var flex = 10 * sp * Math.sin(2 * Math.PI * phase);
+    B = {
+      cx: 0, cy: lerp(pose.cy.x, -330 - bob + 25 * lean.x * 0.2, rb), cz: lerp(pose.cz.x, 70 + 18 * lean.x, rb),
+      phi: lerp(pose.phi.x, 8 + flex - 6 * lean.x, rb) * DEG, yaw: a,
+      fp: { x: pose.fpx.x, y: pose.fpy.x, z: pose.fpz.x }, hp: { x: pose.hpx.x, y: pose.hpy.x, z: pose.hpz.x },
+      breath: Math.sin(t * Math.PI * 2 * (state === 'pant' ? 1.6 : 0.45)) * (state === 'pant' ? 1.6 : 1),
+      tailUp: 1 - 0.85 * rb * sp
+    };
+    if (rb > 0.001) legs.forEach(function (lg) {
+      var key = lg.name[0] === 'f' ? 'fp' : 'hp', side = lg.name.slice(-1);
+      var stat = { x: (key === 'fp' ? pose.fpx.x : pose.hpx.x) * (side === 'L' ? -1 : 1), y: key === 'fp' ? pose.fpy.x : pose.hpy.x, z: key === 'fp' ? pose.fpz.x : pose.hpz.x };
+      B[key + side] = { x: lerp(stat.x, lg.local.x, rb), y: lerp(stat.y, lg.local.y, rb), z: lerp(stat.z, lg.local.z, rb) };
+    });
+    // ---- secondary motion: head lags the bob, ears flap and stream back, tail streams, droplets fly off the wet fur
+    var nl = rot(0, B.cz + 30, a), k = 2600 / (2600 - nl[1]);
+    var nx = nl[0] * k, ny = (B.cy - 100) * k;
+    headY.t = ny; if (prevNeckY === null) headY.x = ny; headY.step(dt); prevNeckY = ny;
+    flare.t = clamp(-headY.v * 0.0016, -0.35, 0.8) + 0.25 * rb * sp; flare.step(dt);
+    swing.t = clamp(v / VMAX, -1, 1) * 0.55; swing.step(dt);
+    tail.t = Math.sin(t * Math.PI * 2 * (state === 'pant' || state === 'idle' ? 2.4 : 5)) * (0.35 - 0.2 * rb * sp); tail.step(dt);
+    B.tail = tail.x; B.nx = nx; B.ny = ny;
+    if (state === 'run' && sp > 0.5 && rnd() < dt * 30) {
+      drops.push({ x: rx - dir * hpx * 0.25 + (rnd() - 0.5) * hpx * 0.4, y: groundY - hpx * (0.55 + rnd() * 0.4), vx: -dir * (40 + rnd() * 160) + v * 0.2, vy: -(150 + rnd() * 260), a: 0, r: 2.5 + rnd() * 3 });
+    }
+    drops.forEach(function (d) { d.a += dt; d.vy += 1700 * dt; d.x += d.vx * dt; d.y += d.vy * dt; });
+    drops = drops.filter(function (d) { return d.a < 0.9 && d.y < groundY + 4; });
+    dust.forEach(function (d) { d.a += dt; d.x += d.vx * dt; d.vx *= 0.93; d.y -= 14 * dt; });
+    dust = dust.filter(function (d) { return d.a < 0.55; });
+  }
+  function dustStep(lg) {
+    if (Math.abs(v) > VMAX * 0.6 && lg.name[0] === 'h' && rnd() < 0.5)
+      dust.push({ x: lg.W[0] * S, y: groundY - 3, vx: -dir * (30 + rnd() * 60), r: 3 + rnd() * 4, a: 0 });
+  }
+
+  var fxEls = [];
+  function render() {
+    P.body = B;
+    P.hx = B.nx + 46; P.hy = headY.x - 150 + 595;
+    P.hyaw = clamp(B.yaw, -0.6, 0.6); P.hpitch = 0.04; P.hroll = -B.yaw * 0.06;
+    P.lookX = clamp(B.yaw, -0.6, 0.6) * 0.6; P.lookY = 0.05;
+    P.eyeOpen = 1; P.pupil = 1.1;
+    var excited = state === 'run' || state === 'skid' || state === 'turn' || state === 'flip' ? 1 : 0;
+    P.mouthOpen = 0.66 + 0.28 * excited; P.tongue = 0.75 + 0.25 * excited;
+    P.earL = flare.x + swing.x; P.earR = flare.x - swing.x; P.earLb = swing.x * 0.6; P.earRb = -swing.x * 0.6;
+    P.dt = 1 / 60;
+    rootG.setAttribute('transform', 'translate(' + rx.toFixed(2) + ',' + groundY.toFixed(2) + ') scale(' + S.toFixed(5) + ')');
+    rig.render(P);
+    shadow.setAttribute('cx', rx); shadow.setAttribute('cy', groundY + 2);
+    shadow.setAttribute('rx', 0.62 * hpx * (1 + 0.35 * Math.abs(Math.sin(B.yaw)))); shadow.setAttribute('ry', 0.075 * hpx);
+    var all = drops.map(function (d) { return ['drop', d]; }).concat(dust.map(function (d) { return ['dust', d]; }));
+    while (fxEls.length < all.length) fxEls.push(D.el('circle', fxG, {}));
+    fxEls.forEach(function (e, i) {
+      var it = all[i];
+      if (!it) { e.setAttribute('opacity', 0); return; }
+      var d = it[1];
+      if (it[0] === 'drop') { e.setAttribute('fill', '#eef7ff'); e.setAttribute('stroke', '#7fb0dc'); e.setAttribute('stroke-width', 1.5); e.setAttribute('r', d.r.toFixed(1)); e.setAttribute('opacity', (1 - d.a / 0.9).toFixed(2)); }
+      else { var q = d.a / 0.55; e.setAttribute('fill', '#fbf3e4'); e.setAttribute('stroke', '#e3d2b4'); e.setAttribute('stroke-width', 2); e.setAttribute('r', (d.r * (1 + 2 * q) * hpx / 180).toFixed(1)); e.setAttribute('opacity', (0.9 * (1 - q)).toFixed(2)); }
+      e.setAttribute('cx', d.x.toFixed(1)); e.setAttribute('cy', d.y.toFixed(1));
+    });
+  }
+
+  var paused = /[?&]paused/.test(location.search), last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!paused) { var n = Math.ceil(dt / (1 / 240)); for (var i = 0; i < n; i++) update(dt / n); render(); }
+    requestAnimationFrame(frame);
+  }
+  update(0); render(); requestAnimationFrame(frame);
+  window.__demo = {
+    step: function (ms) { var n = Math.ceil(ms / (1000 / 240)); for (var i = 0; i < n; i++) update(ms / 1000 / n); render(); },
+    state: function () { return state + ' v=' + Math.round(v); }
+  };
+})();
+</script>
+</body>
+</html>

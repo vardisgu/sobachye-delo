@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Песочница собачки</title>
+<style>
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+  body { display: flex; }
+  #stage { position: relative; flex: 1 1 50%; overflow: hidden; background: linear-gradient(#c6dbec, #a9c6e0 70%, #98b7d4); }
+  #stage h1 { position: absolute; left: 0; right: 0; top: 25%; transform: translateY(-50%); margin: 0; text-align: center; font-size: 44px; color: #4a2519; z-index: 2; pointer-events: none; }
+  .side { flex: 1 1 50%; display: flex; flex-direction: column; justify-content: center; gap: 22px; padding: 0 48px; background: #fff; }
+  .btns { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btns button { font: 600 15px/1 system-ui, sans-serif; padding: 11px 16px; border-radius: 12px; border: 1.5px solid #d9c9b6; background: #fff8ef; color: #4a2519; cursor: pointer; }
+  .btns button:hover { background: #fdecd6; }
+  #formZone { border-radius: 18px; background: #f1f6fb; padding: 28px; color: #4a2519; }
+  #formZone input { display: block; width: 100%; box-sizing: border-box; margin-top: 10px; padding: 12px; border: 1.5px solid #c9bba9; border-radius: 10px; font: inherit; }
+  .hint { color: #6c554b; font-size: 14px; }
+</style>
+</head>
+<body>
+  <section id="stage"><h1>Бублик</h1></section>
+  <section class="side">
+    <div class="hint">Песочница: кнопки запускают поведения. Наведите курсор на форму ниже — собачка подойдёт к экрану.</div>
+    <div class="btns">
+      <button data-b="entrance">Выпрыгнуть</button>
+      <button data-b="zoomies">Носиться</button>
+      <button data-b="shake">Отряхнуться</button>
+      <button data-b="scratch">Почесаться</button>
+      <button data-b="celebrate">Заявка отправлена</button>
+      <button data-b="bath">Мытьё</button>
+      <button data-b="haircut">Стрижка</button>
+    </div>
+    <div id="formZone">
+      <strong>Форма записи (макет)</strong>
+      <input placeholder="Кличка питомца"><input placeholder="Телефон">
+    </div>
+  </section>
+  <script src="../../js/dog/body.js"></script>
+  <script src="../../js/dog/head.js"></script>
+  <script src="../../js/dog/engine.js"></script>
+  <script>
+    var q = new URLSearchParams(location.search);
+    var dog = window.__dog = PuppyDog.create({
+      stage: document.getElementById('stage'), formZone: document.getElementById('formZone'),
+      startPaused: q.has('paused'), seed: q.has('seed') ? +q.get('seed') : 7, randomBehaviors: !q.has('norandom')
+    });
+    document.querySelectorAll('[data-b]').forEach(function (b) { b.onclick = function () { dog.debug.trigger(b.dataset.b); }; });
+    var f = document.getElementById('formZone');
+    f.addEventListener('focusin', function () { dog.notify('form-focus'); });
+    f.addEventListener('focusout', function () { dog.notify('form-blur'); });
+  </script>
+</body>
+</html>

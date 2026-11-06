@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puppy jump test</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: linear-gradient(#c6dbec, #a9c6e0 70%, #98b7d4); }
+  svg { display: block; width: 100%; height: 100%; }
+  .again { position: fixed; left: 16px; top: 14px; font: 600 14px/1 system-ui, sans-serif; color: #4a2519; background: #fff8; border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; }
+</style>
+</head>
+<body>
+<button class="again" onclick="location.reload()">Ещё раз</button>
+<svg id="s"></svg>
+<script src="../../js/dog/body.js"></script>
+<script src="../../js/dog/head.js"></script>
+<script>
+(function () {
+  // Entrance test: peek from under the bottom edge, duck (anticipation), ballistic leap, landing absorbed by the legs, sit.
+  var D = PuppyDog._dev, svg = document.getElementById('s');
+  var shadow = D.el('ellipse', svg, { fill: '#27476a', opacity: 0 });
+  var dustG = D.el('g', svg);
+  var rootG = D.el('g', svg);
+  var sc = new D.Scene(rootG), rig = new D.Rig(sc), P = D.defaultPose();
+  var DEG = Math.PI / 180, SIT_UNITS = 870;
+  var W, H, hpx, S, homeX, groundY;
+  function layout() {
+    W = innerWidth; H = innerHeight;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    hpx = Math.min(Math.max(0.2 * H, 110), 230, 0.42 * W);
+    S = hpx / SIT_UNITS; homeX = W / 2; groundY = 0.89 * H;
+  }
+  layout();
+
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function Spring(x, w, z) { this.x = x; this.v = 0; this.w = w; this.z = z; this.t = x; }
+  Spring.prototype.step = function (dt) { this.v += (this.w * this.w * (this.t - this.x) - 2 * this.z * this.w * this.v) * dt; this.x += this.v * dt; return this.x; };
+
+  // key poses, dog units relative to the root (ground point under the chest); phi = spine angle
+  var POSES = {
+    sit:     { cx: 0, cy: -350, cz: 40, phi: 72, fpx: 62, fpy: -32, fpz: 120, hpx: 200, hpy: -32, hpz: 70 },
+    stand:   { cx: 0, cy: -330, cz: 70, phi: 8, fpx: 70, fpy: -32, fpz: 130, hpx: 125, hpy: -32, hpz: -100 },
+    crouch:  { cx: 0, cy: -250, cz: 82, phi: 14, fpx: 85, fpy: -32, fpz: 140, hpx: 135, hpy: -32, hpz: -85 },
+    stretch: { cx: 0, cy: -420, cz: 10, phi: 84, fpx: 108, fpy: -395, fpz: 175, hpx: 80, hpy: 10, hpz: -40 },
+    tuck:    { cx: 0, cy: -400, cz: 30, phi: 62, fpx: 100, fpy: -370, fpz: 175, hpx: 125, hpy: -110, hpz: -30 },
+    reach:   { cx: 0, cy: -362, cz: 50, phi: 38, fpx: 88, fpy: -36, fpz: 125, hpx: 115, hpy: -100, hpz: -90 }
+  };
+  var KEYS = Object.keys(POSES.sit);
+  var pose = {};
+  KEYS.forEach(function (k) { pose[k] = new Spring(POSES.sit[k], 14, 0.8); });
+  function target(name, w, z) {
+    KEYS.forEach(function (k) { var s = pose[k]; s.t = POSES[name][k]; s.w = w; s.z = z; });
+    poseName = name;
+  }
+  var poseName = 'sit';
+
+  // secondary motion
+  var flare = new Spring(0, 9, 0.2), flareTip = new Spring(0, 6, 0.3);   // ears: lift in free fall, slap down on landing
+  var headLag = new Spring(0, 15, 0.32);                                  // head keeps moving when the body stops
+  var stretch = new Spring(0, 22, 0.55), tail = new Spring(0, 10, 0.35);
+  var yawS = new Spring(0, 9, 0.7), pitchS = new Spring(0, 9, 0.7), lookX = new Spring(0, 30, 0.9), lookY = new Spring(0.1, 30, 0.9);
+  var rootY = new Spring(H + 1.35 * hpx, 13, 0.5);
+  var x0 = homeX - 0.17 * W;
+
+  var t = 0, phase = 'wait', phaseT = 0, rx = x0, ry = rootY.x, vx = 0, vy = 0, g = 0, prevVy = 0;
+  var blinkT = -1, nextBlink = 1.9, dust = [], landT = -1, rollDeg = 0;
+  var seed = 3; function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+
+  function setPhase(p) { phase = p; phaseT = 0; }
+
+  function update(dt) {
+    t += dt; phaseT += dt;
+    var prevRy = ry;
+    if (phase === 'wait') {
+      if (t > 0.5) { rootY.t = H + 0.614 * hpx; rootY.w = 13; rootY.z = 0.5; setPhase('peek'); }
+    } else if (phase === 'peek') {
+      if (phaseT > 0.45 && phaseT < 0.85) lookX.t = -0.9;
+      else if (phaseT >= 0.85 && phaseT < 1.25) lookX.t = 0.9;
+      else lookX.t = 0;
+      if (phaseT > 1.35 && blinkT < 0 && phaseT < 1.4) blinkT = 0;
+      if (phaseT > 1.55) { rootY.t = H + 1.3 * hpx; rootY.w = 24; rootY.z = 0.9; setPhase('duck'); }
+    } else if (phase === 'duck') {
+      if (phaseT > 0.24) {                       // launch: solve a ballistic arc that lands exactly at home
+        var yA = groundY - 0.75 * hpx;
+        g = 13.8 * hpx;
+        var tr = Math.sqrt(2 * Math.max(10, ry - yA) / g), tf = Math.sqrt(2 * (groundY - yA) / g);
+        vy = -g * tr; vx = (homeX - rx) / (tr + tf);
+        target('stretch', 26, 0.75);
+        flare.v -= 4;                            // launch pushes the ears down
+        headLag.v += -vy / S * 0.02;             // and the head lags behind the body for a moment
+        setPhase('flight');
+      }
+    }
+    if (phase === 'wait' || phase === 'peek' || phase === 'duck') {
+      ry = rootY.step(dt);
+    } else if (phase === 'flight') {
+      vy += g * dt; rx += vx * dt; ry += vy * dt;
+      var v0 = g * 0.62;
+      var name = phaseT < 0.12 || vy < -0.4 * v0 ? 'stretch' : vy < 0.25 * v0 ? 'tuck' : 'reach';
+      if (name !== poseName) target(name, name === 'reach' ? 20 : 15, 0.75);
+      if (vy > 0 && ry >= groundY) {             // touchdown (only while falling): the legs absorb the fall
+        ry = groundY; rx = homeX;
+        headLag.v += vy / S * 0.035;
+        flare.v -= 2.4; flare.z = 0.42; tail.v -= 4; stretch.x = -0.05;
+        target('crouch', 32, 0.8);
+        for (var i = 0; i < 7; i++) dust.push({ x: homeX + (rnd() - 0.5) * hpx * 0.8, y: groundY - 4, vx: (rnd() - 0.5) * 220, r: 6 + rnd() * 8, a: 0 });
+        landT = t; vy = 0; vx = 0;
+        setPhase('land');
+      }
+    } else if (phase === 'land') {
+      if (phaseT > 0.1 && poseName === 'crouch') target('stand', 13, 0.45);
+      if (phaseT > 0.36 && poseName === 'stand') target('sit', 9, 0.72);
+      if (phaseT > 1.4) setPhase('idle');
+    }
+    var cvy = (ry - prevRy) / dt;               // actual vertical speed of the body (px/s)
+    prevVy = cvy;
+
+    // ears: lifted by falling speed, pressed when rising, spring back with overshoot
+    flare.t = clamp(cvy * (phase === 'flight' ? 0.0011 : 0.0004) * 180 / hpx, -0.3, 0.95);
+    if (phase === 'idle' || phase === 'land') flare.t = Math.sin(t * 1.7) * 0.03;
+    flare.step(dt); flareTip.t = flare.x; flareTip.step(dt);
+    headLag.step(dt);
+    stretch.t = phase === 'flight' ? clamp(-cvy / (g * 0.62 || 1), 0, 1) * 0.07 : 0;
+    stretch.step(dt);
+    var wag = phase === 'idle' || phase === 'land' ? Math.sin(t * Math.PI * 2 * 2.4) * 0.35 : 0;
+    tail.t = wag + clamp(cvy * 0.0004, -0.4, 0.7); tail.step(dt);
+    // head and eyes
+    yawS.t = phase === 'flight' ? 0.22 : phase === 'peek' ? lookX.t * 0.25 : 0;
+    pitchS.t = phase === 'flight' ? clamp(-cvy * 0.00025, -0.15, 0.25) : 0.02;
+    yawS.step(dt); pitchS.step(dt); lookX.step(dt);
+    lookY.t = phase === 'flight' ? -0.3 : 0.1; lookY.step(dt);
+    if (phase === 'idle' && t > nextBlink && blinkT < 0) { blinkT = 0; nextBlink = t + 2 + rnd() * 3; }
+    if (blinkT >= 0) { blinkT += dt; if (blinkT > 0.17) blinkT = -1; }
+    KEYS.forEach(function (k) { pose[k].step(dt); });
+    rollDeg += ((phase === 'flight' ? clamp(vx / (W * 0.25), -1, 1) * 7 : 0) - rollDeg) * Math.min(1, dt * 8);
+    for (var j = dust.length - 1; j >= 0; j--) { var d = dust[j]; d.a += dt; d.x += d.vx * dt; d.y -= 18 * dt; d.vx *= 0.94; if (d.a > 0.6) dust.splice(j, 1); }
+  }
+
+  var dustEls = [];
+  function render() {
+    var B = { cx: pose.cx.x, cy: pose.cy.x, cz: pose.cz.x, phi: pose.phi.x * DEG,
+      fp: { x: pose.fpx.x, y: pose.fpy.x, z: pose.fpz.x }, hp: { x: pose.hpx.x, y: pose.hpy.x, z: pose.hpz.x },
+      stretch: stretch.x, breath: Math.sin(t * Math.PI * 2 * 0.45), tail: tail.x };
+    // head sits on the neck of the articulated body (same weak perspective as body.js)
+    var nz = B.cz + 30, k = 2600 / (2600 - nz);
+    var nx = B.cx * k, ny = (B.cy - 100) * k;
+    P.body = B;
+    P.hx = nx + 46; P.hy = ny - 150 + 595 + headLag.x - B.breath * 5;
+    P.hyaw = yawS.x; P.hpitch = pitchS.x; P.hroll = -yawS.x * 0.12;
+    P.lookX = lookX.x; P.lookY = lookY.x;
+    var u = blinkT >= 0 ? blinkT / 0.17 : -1;
+    P.eyeOpen = u < 0 ? 1 : Math.max(0.06, u < 0.4 ? 1 - u / 0.4 : (u - 0.4) / 0.6);
+    if (landT >= 0 && t - landT < 0.28) P.eyeOpen = 0.12;           // squeeze on impact
+    var excited = phase === 'flight' ? 1 : 0;
+    P.mouthOpen = 0.62 + 0.3 * excited + 0.12 * Math.sin(t * 10.7) * (phase === 'idle' ? 1 : 0);
+    P.tongue = 0.7 + 0.25 * excited;
+    P.earL = flare.x; P.earR = flare.x; P.earLb = (flare.x - flareTip.x) * 1.3; P.earRb = P.earLb;
+    P.pupil = 1 + 0.15 * excited;
+    P.dt = 1 / 60;
+    rootG.setAttribute('transform', 'translate(' + rx.toFixed(2) + ',' + ry.toFixed(2) + ') scale(' + S.toFixed(5) + ') rotate(' + rollDeg.toFixed(2) + ' 0 -420)');
+    rig.render(P);
+    // contact shadow: shrinks and fades with height, absent while the dog is under the edge
+    var h = groundY - ry, vis = ry <= groundY + 1 ? 1 : 0, sh = 1 / (1 + Math.max(0, h) / (1.1 * hpx));
+    shadow.setAttribute('cx', rx); shadow.setAttribute('cy', groundY + 2);
+    shadow.setAttribute('rx', 0.62 * hpx * sh); shadow.setAttribute('ry', 0.075 * hpx * sh);
+    shadow.setAttribute('opacity', (0.2 * sh * vis).toFixed(3));
+    while (dustEls.length < dust.length) dustEls.push(D.el('circle', dustG, { fill: '#fbf3e4', stroke: '#e3d2b4', 'stroke-width': 2 }));
+    for (var i = 0; i < dustEls.length; i++) {
+      var d = dust[i], e = dustEls[i];
+      if (!d) { e.setAttribute('opacity', 0); continue; }
+      var q = d.a / 0.6;
+      e.setAttribute('cx', d.x.toFixed(1)); e.setAttribute('cy', d.y.toFixed(1));
+      e.setAttribute('r', (d.r * (1 + 2.2 * q) * hpx / 180).toFixed(1)); e.setAttribute('opacity', (0.9 * (1 - q)).toFixed(2));
+    }
+  }
+
+  var paused = /[?&]paused/.test(location.search), last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!paused) { var n = Math.ceil(dt / (1 / 240)); for (var i = 0; i < n; i++) update(dt / n); render(); }
+    requestAnimationFrame(frame);
+  }
+  render(); requestAnimationFrame(frame);
+  window.__demo = {
+    step: function (ms) { var n = Math.ceil(ms / (1000 / 240)); for (var i = 0; i < n; i++) update(ms / 1000 / n); render(); },
+    state: function () { return phase + ':' + poseName; }
+  };
+})();
+</script>
+</body>
+</html>
