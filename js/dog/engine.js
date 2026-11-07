@@ -713,6 +713,11 @@
         if (curName === 'idle') start(name); else if (curName !== name) pending = name;
       },
       busy: function () { return curName !== 'idle'; },
+      pet: function (sec) {                                       // petting without a hover (a tap on the head on touch screens)
+        if (curName !== 'idle') return;
+        if (petT < 0 || t - petT > 0.8) emit('pet');
+        petT = t + (sec || 1.2) - 0.7;
+      },
       svg: svg,
       place: function (x, y, h, extra) {                          // home spot and sitting height in stage px; place(null) = defaults
         fixed = x == null ? null : { x: x, y: y, h: h || 0 };

@@ -64,6 +64,7 @@ var CONFIG = { endpoint: '', timeoutMs: 15000, demoDelayMs: 900 };
     var x = m.head.x + 0.22 * m.hpx, y = m.head.y - 0.4 * m.hpx - h, left = x + w > m.W - 12;
     if (left) x = m.head.x - 0.22 * m.hpx - w;                       // не помещается справа: ставим слева
     bubble.classList.toggle('is-left', left);
+    if (bubble.avoid) { var r = bubble.avoid(); if (x < r.right && x + w > r.left && y < r.bottom) y = r.bottom; }   // не на кнопках
     bubble.style.setProperty('--bx', Math.round(clamp(x, 8, m.W - w - 8)) + 'px');
     bubble.style.setProperty('--by', Math.round(Math.max(8, y)) + 'px');
   }
@@ -110,7 +111,7 @@ var CONFIG = { endpoint: '', timeoutMs: 15000, demoDelayMs: 900 };
       hpx = Math.min(H * 0.52, floor - nav.offsetHeight - 6, W * 0.34);
       home = W * 0.73;
     } else {
-      hpx = Math.min(floor - introBottom - 16, H * 0.46, W * 0.8);
+      hpx = Math.min(floor - introBottom - clamp(H * 0.08, 56, 80), H * 0.46, W * 0.8);   // над головой остаётся просвет для подсказки и реплик
       home = W * (W < 560 ? 0.5 : 0.66);
     }
     hpx = Math.max(hpx, 120);
@@ -124,13 +125,46 @@ var CONFIG = { endpoint: '', timeoutMs: 15000, demoDelayMs: 900 };
     if (heroDog) heroDog.api.place(home, floor, hpx, { peek: floor - 0.12 * hpx, peekDx: Math.min(W * 0.2, hpx * 0.75), apex: 0.3 });
     if (hint.classList.contains('is-on')) placeHint();
   }
+  // подсказка «погладь меня»: ищем свободное место у головы, не залезая на текст и кнопки;
+  // стрелка всегда рисуется от подписи к голове
+  var hintArrow = $('#hintArrow'), arrowLine = $('.hint-arrow__line', hintArrow), arrowHead = $('.hint-arrow__head', hintArrow);
+  function showHint(on) { hint.classList.toggle('is-on', on); hintArrow.classList.toggle('is-on', on); }
   function placeHint() {
     if (!heroDog || !heroGeom) return;
-    var g = heroGeom, w = hint.offsetWidth, m = heroDog.api.metrics();
-    var x = m.head.x - 0.52 * g.hpx - w - 66, y = m.head.y - 0.2 * g.hpx;
-    if (x < 12 || (!g.one && y < g.introBottom)) { x = m.head.x - w / 2 - 40; y = m.head.y - 0.75 * g.hpx - 50; }   // слева тесно: над головой
-    hint.style.setProperty('--hx', Math.round(Math.max(12, x)) + 'px');
-    hint.style.setProperty('--hy', Math.round(Math.max(nav.offsetHeight, y)) + 'px');
+    var g = heroGeom, m = heroDog.api.metrics(), hp = g.hpx, hx = m.head.x, hy = m.head.y, W = g.W;
+    var ir = intro.getBoundingClientRect(), hr = hero.getBoundingClientRect();
+    var iL = ir.left - hr.left, iR = ir.right - hr.left, iB = ir.bottom - hr.top + 10;
+    var w = hint.offsetWidth, h = hint.offsetHeight, earR = 0.5 * hp, gap = Math.min(70, hp * 0.2), x, y, s, e, side;
+    var roomL = hx - earR - gap - 12, roomR = W - 12 - (hx + earR + gap);
+    if (Math.max(roomL, roomR) >= w) {                            // рядом с головой, со стороны, где просторнее
+      side = roomL >= roomR ? -1 : 1;
+      x = side < 0 ? hx - earR - gap - w : hx + earR + gap;
+      y = hy - 0.12 * hp - h / 2;
+      if (x < iR && x + w > iL && y < iB) y = iB;                 // не наезжаем на текст и кнопки
+      s = [side < 0 ? x + w + 8 : x - 8, y + h * 0.6];
+      e = [hx + side * 0.4 * hp, hy - 0.06 * hp];
+      hint.style.setProperty('--hr', side < 0 ? '-5deg' : '5deg');
+    } else {                                                      // тесно (телефон): в просвете между кнопками и головой
+      x = clamp(hx - 0.28 * hp - w, 12, W - w - 12);
+      y = Math.max(iB - 4, hy - 1.02 * hp - h);
+      s = [x + w + 8, y + h * 0.62];
+      e = [hx - 0.16 * hp, hy - 0.33 * hp];
+      if (e[0] - s[0] < 18) { s = [x + w * 0.62, y + h + 6]; e = [hx - 0.24 * hp, hy - 0.3 * hp]; }   // голова прямо под подписью: стрелка вниз
+      hint.style.setProperty('--hr', '-4deg');
+    }
+    hint.style.setProperty('--hx', Math.round(x) + 'px');
+    hint.style.setProperty('--hy', Math.round(y) + 'px');
+    drawArrow(s, e);
+  }
+  function drawArrow(s, e) {
+    var dx = e[0] - s[0], dy = e[1] - s[1], len = Math.hypot(dx, dy) || 1;
+    var bend = (dx >= 0 ? -1 : 1) * Math.min(40, len * 0.35);      // дуга, как от руки
+    var cx = (s[0] + e[0]) / 2 - dy / len * bend, cy = (s[1] + e[1]) / 2 + dx / len * bend;
+    arrowLine.setAttribute('d', 'M' + s[0].toFixed(1) + ',' + s[1].toFixed(1) + ' Q' + cx.toFixed(1) + ',' + cy.toFixed(1) + ' ' + e[0].toFixed(1) + ',' + e[1].toFixed(1));
+    var ang = Math.atan2(e[1] - cy, e[0] - cx), k = 13, a1 = ang + 2.6, a2 = ang - 2.6;
+    arrowHead.setAttribute('d', 'M' + (e[0] + Math.cos(a1) * k).toFixed(1) + ',' + (e[1] + Math.sin(a1) * k).toFixed(1) + ' L' + e[0].toFixed(1) + ',' + e[1].toFixed(1) + ' L' + (e[0] + Math.cos(a2) * k).toFixed(1) + ',' + (e[1] + Math.sin(a2) * k).toFixed(1));
+    var L = 0; try { L = arrowLine.getTotalLength(); } catch (err) { L = len * 1.2; }
+    hintArrow.style.setProperty('--len', Math.ceil(L + 2));
   }
 
   // буквы на пружинках: проминаются под собакой, подпрыгивают от её прыжков и бега и от курсора
@@ -166,6 +200,10 @@ var CONFIG = { endpoint: '', timeoutMs: 15000, demoDelayMs: 900 };
   });
 
   var heroDog = null, heroIntroDone = false, petted = false, saidPet = false;
+  heroBubble.avoid = function () {
+    var ir = intro.getBoundingClientRect(), hr = hero.getBoundingClientRect();
+    return { left: ir.left - hr.left, right: ir.right - hr.left, bottom: ir.bottom - hr.top + 6 };
+  };
   var TRICKS = ['shake', 'zoomies', 'hop', 'scratch'], lastTrick = '';
   function makeHeroDog() {
     var g = heroGeom;
@@ -178,18 +216,22 @@ var CONFIG = { endpoint: '', timeoutMs: 15000, demoDelayMs: 900 };
           if (!heroIntroDone) {
             heroIntroDone = true;
             after(0.6, function () { say(heroBubble, heroDog, 'Гав! Привет!', 2.2, 'hero'); });
-            after(3.2, function () { if (!petted) { placeHint(); hint.classList.add('is-on'); } }, 'hint');
+            after(3.2, function () { if (!petted && !heroDog.api.busy()) { placeHint(); showHint(true); } }, 'hint');
           }
         }
-        if (name === 'pet') { petted = true; cancel('hint'); hint.classList.remove('is-on'); if (!saidPet) { saidPet = true; say(heroBubble, heroDog, 'Ещё-ё…', 1.8, 'hero'); } }
-        if (name === 'behaviour' && data.name !== 'entrance') hint.classList.remove('is-on');
+        if (name === 'pet') { petted = true; cancel('hint'); showHint(false); if (!saidPet) { saidPet = true; say(heroBubble, heroDog, 'Ещё-ё…', 1.8, 'hero'); } }
+        if (name === 'behaviour' && data.name !== 'entrance') showHint(false);
       }
     });
     if (!heroDog) return;
     watch(heroDog);
     hero.addEventListener('pointermove', function (e) { hero.classList.toggle('stage-cursor', !!heroDog.api.hit(e.clientX, e.clientY) && !e.target.closest('a,button')); });
     hero.addEventListener('click', function (e) {
-      if (e.target.closest('a,button') || !heroDog.api.hit(e.clientX, e.clientY) || heroDog.api.busy()) return;
+      var part = e.target.closest('a,button') ? '' : heroDog.api.hit(e.clientX, e.clientY);
+      if (!part || heroDog.api.busy()) return;
+      // на сенсорном экране навести курсор нельзя: касание головы гладит, касание туловища — трюк
+      var touch = e.pointerType === 'touch' || (!e.pointerType && window.matchMedia && matchMedia('(hover: none)').matches);
+      if (touch && part === 'head') { heroDog.api.pet(1.4); return; }
       var pick = TRICKS.filter(function (x) { return x !== lastTrick; })[Math.floor(Math.random() * 3)];
       lastTrick = pick; heroDog.api.play(pick);
       if (pick === 'hop') say(heroBubble, heroDog, 'Ура!', 1.4, 'hero');
